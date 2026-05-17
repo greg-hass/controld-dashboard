@@ -49,6 +49,8 @@ const categoryColors: Record<string, string> = {
   music: 'bg-pink-500/10 text-pink-500',
 };
 
+const toSearchableText = (value: unknown) => String(value ?? '').toLowerCase();
+
 export function Services() {
   const services = useAppStore((state) => state.services);
   const serviceCategories = useAppStore((state) => state.serviceCategories);
@@ -59,7 +61,7 @@ export function Services() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const filteredServices = services.filter((s: Service) => {
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = toSearchableText(s.name).includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === 'all' || s.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
@@ -140,7 +142,7 @@ export function Services() {
             </TabsTrigger>
             {serviceCategories.map((cat: ServiceCategory) => (
               <TabsTrigger key={cat.PK} value={cat.PK} className="text-xs">
-                {cat.name} ({services.filter((s: Service) => s.category === cat.PK).length})
+                {String(cat.name ?? cat.PK)} ({services.filter((s: Service) => s.category === cat.PK).length})
               </TabsTrigger>
             ))}
           </TabsList>
@@ -218,15 +220,15 @@ function ServiceCard({
       onClick={onToggle}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            'w-9 h-9 rounded-lg flex items-center justify-center',
-            categoryColors[category]?.split(' ')[0] || 'bg-secondary'
-          )}>
-            {categoryIcons[category] || <Globe className="w-4 h-4" />}
-          </div>
-          <div>
-            <p className="text-sm font-medium">{service.name}</p>
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              'w-9 h-9 rounded-lg flex items-center justify-center',
+              categoryColors[category]?.split(' ')[0] || 'bg-secondary'
+            )}>
+              {categoryIcons[category] || <Globe className="w-4 h-4" />}
+            </div>
+            <div>
+            <p className="text-sm font-medium">{String(service.name ?? service.PK)}</p>
             <p className="text-xs text-muted-foreground capitalize">{category}</p>
           </div>
         </div>
