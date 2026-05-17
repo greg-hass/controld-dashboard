@@ -126,26 +126,33 @@ const normalizeNetworkStats = (value: unknown): NetworkStats[] =>
     }))
     .filter((item) => item.pop !== 'unknown');
 
+const normalizeStringOrObject = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return (value as Record<string, unknown>).name as string || '';
+  }
+  return '';
+};
+
 const enrichDevicesWithProfileNames = (deviceList: Device[], profileList: Profile[]) => {
   const profileById = new Map(profileList.map((profile) => [profile.PK, profile.name]));
   const profileByName = new Map(profileList.map((profile) => [profile.name, profile.name]));
 
   return deviceList.map((device) => {
+    // API sometimes returns profile/type as objects {PK, name, updated} instead of strings
+    const profileId = normalizeStringOrObject(device.profile);
     const profileName =
-      device.profile_name ||
-      profileById.get(device.profile) ||
-      profileByName.get(device.profile) ||
-      device.profile ||
+      normalizeStringOrObject(device.profile_name) ||
+      profileById.get(profileId) ||
+      profileByName.get(profileId) ||
+      profileId ||
       '';
 
-    // API sometimes returns type as an object {PK, name, updated} instead of a string
-    const typeValue =
-      typeof device.type === 'string'
-        ? device.type
-        : (device.type as unknown as { name?: string })?.name || '';
+    const typeValue = normalizeStringOrObject(device.type);
 
     return {
       ...device,
+      profile: profileId,
       profile_name: profileName,
       type: typeValue,
     };

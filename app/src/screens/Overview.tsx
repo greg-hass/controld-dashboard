@@ -327,7 +327,7 @@ export function Overview() {
                     <div>
                       <p className="text-sm font-medium">{device.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {device.profile_name || 'No profile'} · {device.type}
+                        {String(device.profile_name ?? '') || 'No profile'} · {String(device.type ?? '')}
                       </p>
                     </div>
                   </div>

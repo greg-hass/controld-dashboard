@@ -156,10 +156,10 @@ export function Devices() {
             (profile) => profile.PK === device.profile || profile.name === device.profile
           );
           const assignedProfileName =
-            device.profile_name ||
+            String(device.profile_name ?? '') ||
             resolvedProfile?.name ||
             profileNameById.get(device.profile) ||
-            device.profile ||
+            String(device.profile ?? '') ||
             'Unassigned';
           const assignedProfileValue = resolvedProfile?.PK || device.profile || '';
           const suspension = deviceSuspensions[device.PK];
@@ -201,7 +201,7 @@ export function Devices() {
                       </Badge>
                     )}
                     <Badge variant="outline" className="text-xs capitalize">
-                      {device.type}
+                      {String(device.type ?? '')}
                     </Badge>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
