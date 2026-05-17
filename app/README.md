@@ -26,7 +26,7 @@ cd controls-dashboard/app
 docker compose up -d
 ```
 
-Then open `http://your-server:3000`
+Then open `http://your-server:3173`
 
 ### With Dockge
 
@@ -40,7 +40,7 @@ services:
     image: ghcr.io/greg-hass/controls-dashboard:latest
     container_name: controls-dashboard
     ports:
-      - "3000:80"
+      - "3173:80"
     restart: unless-stopped
     environment:
       TZ: Europe/London

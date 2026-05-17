@@ -24,13 +24,13 @@ services:
     image: ghcr.io/greg-hass/controls-dashboard:latest
     container_name: controls-dashboard
     ports:
-      - "3000:80"
+      - "3173:80"
     restart: unless-stopped
     environment:
       TZ: Europe/London
 ```
 
-Open `http://your-server:3000`.
+Open `http://your-server:3173`.
 
 If the GitHub Container Registry package is private, log in on the Ubuntu server before deploying:
 
