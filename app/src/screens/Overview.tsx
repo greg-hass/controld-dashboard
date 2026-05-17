@@ -320,15 +320,14 @@ export function Overview() {
                 >
                   <div className="flex items-center gap-3">
                     {(() => {
-                      const statusColor =
-                        device.status === 0
-                          ? 'bg-slate-400'
-                          : device.status === 1
-                            ? 'bg-emerald-500'
-                            : device.status === 2
-                              ? 'bg-amber-500'
-                              : 'bg-red-500';
-                      return <div className={`w-2 h-2 rounded-full ${statusColor}`} />;
+                      const online =
+                        device.last_activity &&
+                        (Date.now() / 1000 - device.last_activity) / 60 < 5;
+                      return (
+                        <div
+                          className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500' : 'bg-red-500'}`}
+                        />
+                      );
                     })()}
                     <div>
                       <p className="text-sm font-medium">{device.name}</p>

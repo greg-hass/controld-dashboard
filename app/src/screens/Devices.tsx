@@ -70,12 +70,12 @@ export function Devices() {
     return type === 'router' ? Router : Smartphone;
   };
 
+  // Control D device statuses:
+  // 0 = Unused (never configured)
+  // 1 = Active (configured and used)
+  // 2 = Profile not enforced (bypass mode)
+  // 3 = Disabled (hard disabled)
   const getStatusMeta = (status: number) => {
-    // Control D device statuses:
-    // 0 = Unused (never configured)
-    // 1 = Active (configured and used)
-    // 2 = Profile not enforced (bypass mode)
-    // 3 = Disabled (hard disabled)
     switch (status) {
       case 0:
         return { color: 'bg-slate-400', label: 'Unused', textColor: 'text-slate-400' };
@@ -88,6 +88,13 @@ export function Devices() {
       default:
         return { color: 'bg-slate-400', label: 'Unknown', textColor: 'text-slate-400' };
     }
+  };
+
+  // Real-time connectivity: online if last_activity within last 5 minutes
+  const isDeviceOnline = (device: Device) => {
+    if (!device.last_activity) return false;
+    const minutesSinceActivity = (Date.now() / 1000 - device.last_activity) / 60;
+    return minutesSinceActivity < 5;
   };
 
   const formatRemaining = (expiresAt?: number) => {
@@ -133,7 +140,7 @@ export function Devices() {
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{devices.length} total</Badge>
           <Badge variant="outline" className="text-emerald-500">
-            {devices.filter((d) => d.status === 1).length} online
+            {devices.filter(isDeviceOnline).length} online
           </Badge>
         </div>
       </div>
@@ -197,13 +204,19 @@ export function Devices() {
                       <h3 className="font-medium text-sm">{device.name}</h3>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {(() => {
+                          const online = isDeviceOnline(device);
                           const meta = getStatusMeta(device.status);
                           return (
                             <>
-                              <div className={cn('w-1.5 h-1.5 rounded-full', meta.color)} />
-                              <span className={cn('text-xs capitalize', meta.textColor)}>
-                                {meta.label}
+                              <div className={cn('w-1.5 h-1.5 rounded-full', online ? 'bg-emerald-500' : 'bg-red-500')} />
+                              <span className={cn('text-xs capitalize', online ? 'text-emerald-500' : 'text-red-500')}>
+                                {online ? 'Online' : 'Offline'}
                               </span>
+                              {device.status !== 1 && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({meta.label})
+                                </span>
+                              )}
                             </>
                           );
                         })()}
