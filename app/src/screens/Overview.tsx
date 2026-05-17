@@ -320,15 +320,27 @@ export function Overview() {
                 >
                   <div className="flex items-center gap-3">
                     {(() => {
-                      const nowSec = Date.now() / 1000;
-                      let lastSec = device.last_activity ?? 0;
-                      // Handle milliseconds timestamp from API
-                      if (lastSec > nowSec * 10) {
-                        lastSec = lastSec / 1000;
+                      const raw = device.last_activity;
+                      let online = false;
+                      if (raw != null) {
+                        let lastMs: number | undefined;
+                        if (typeof raw === 'number') {
+                          lastMs = raw > 1e10 ? raw : raw * 1000;
+                        } else if (typeof raw === 'string') {
+                          const parsed = Date.parse(raw);
+                          if (!isNaN(parsed)) {
+                            lastMs = parsed;
+                          } else {
+                            const num = Number(raw);
+                            if (!isNaN(num)) {
+                              lastMs = num > 1e10 ? num : num * 1000;
+                            }
+                          }
+                        }
+                        if (lastMs != null) {
+                          online = (Date.now() - lastMs) / 60000 < 5;
+                        }
                       }
-                      const online =
-                        device.last_activity &&
-                        (nowSec - lastSec) / 60 < 5;
                       return (
                         <div
                           className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500' : 'bg-red-500'}`}

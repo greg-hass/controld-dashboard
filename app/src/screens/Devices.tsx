@@ -90,20 +90,37 @@ export function Devices() {
     }
   };
 
-  // Real-time connectivity: online if last_activity within last 5 minutes.
-  // Control D API returns last_activity as a Unix timestamp. It may be in
-  // seconds or milliseconds depending on the endpoint/version.
+  // Derive real-time online status from last_activity timestamp.
+  // The Control D API returns last_activity in various formats:
+  // - Unix timestamp in seconds or milliseconds
+  // - ISO 8601 date string
+  // - May be missing/null for unused devices
   const isDeviceOnline = (device: Device) => {
-    if (!device.last_activity) return false;
-    const nowSec = Date.now() / 1000;
-    let lastSec = device.last_activity;
-    // If the timestamp is in milliseconds (way larger than current seconds),
-    // convert it to seconds.
-    if (lastSec > nowSec * 10) {
-      lastSec = lastSec / 1000;
+    const raw = device.last_activity;
+    if (raw == null) return false;
+
+    let lastMs: number | undefined;
+
+    if (typeof raw === 'number') {
+      // Distinguish seconds vs milliseconds by magnitude
+      lastMs = raw > 1e10 ? raw : raw * 1000;
+    } else if (typeof raw === 'string') {
+      // Try ISO date first, then numeric string
+      const parsed = Date.parse(raw);
+      if (!isNaN(parsed)) {
+        lastMs = parsed;
+      } else {
+        const num = Number(raw);
+        if (!isNaN(num)) {
+          lastMs = num > 1e10 ? num : num * 1000;
+        }
+      }
     }
-    const minutesSinceActivity = (nowSec - lastSec) / 60;
-    return minutesSinceActivity >= 0 && minutesSinceActivity < 5;
+
+    if (lastMs == null) return false;
+
+    const minutesSince = (Date.now() - lastMs) / 60000;
+    return minutesSince >= 0 && minutesSince < 5;
   };
 
   const formatRemaining = (expiresAt?: number) => {
