@@ -9,7 +9,7 @@ This is an unofficial project. It uses the public Control D API at `https://api.
 The GitHub Actions workflow builds the app in `app/` and publishes this image:
 
 ```text
-ghcr.io/greg-hass/controls-dashboard:latest
+ghcr.io/greg-hass/controld-dashboard:latest
 ```
 
 Tagged releases and branch builds are also published with matching tags when pushed.
@@ -20,9 +20,9 @@ Create a new Dockge stack and use:
 
 ```yaml
 services:
-  controls-dashboard:
-    image: ghcr.io/greg-hass/controls-dashboard:latest
-    container_name: controls-dashboard
+  controld-dashboard:
+    image: ghcr.io/greg-hass/controld-dashboard:latest
+    container_name: controld-dashboard
     ports:
       - "3173:80"
     restart: unless-stopped
@@ -36,7 +36,7 @@ If the GitHub Container Registry package is private, log in on the Ubuntu server
 
 ```bash
 echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u greg-hass --password-stdin
-docker pull ghcr.io/greg-hass/controls-dashboard:latest
+docker pull ghcr.io/greg-hass/controld-dashboard:latest
 ```
 
 ## Control D Setup

@@ -19,7 +19,7 @@ RUN npm run build
 # Production stage - serve with nginx
 FROM nginx:alpine
 
-LABEL org.opencontainers.image.source="https://github.com/greg-hass/controls-dashboard"
+LABEL org.opencontainers.image.source="https://github.com/greg-hass/controld-dashboard"
 LABEL org.opencontainers.image.description="Self-hosted Control D dashboard"
 
 # Copy built files to nginx html directory

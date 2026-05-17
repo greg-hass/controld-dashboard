@@ -21,8 +21,8 @@ A self-hosted web dashboard for managing [Control D](https://controld.com) DNS f
 ### With Docker (recommended)
 
 ```bash
-git clone https://github.com/greg-hass/controls-dashboard.git
-cd controls-dashboard/app
+git clone https://github.com/greg-hass/controld-dashboard.git
+cd controld-dashboard/app
 docker compose up -d
 ```
 
@@ -36,9 +36,9 @@ Then open `http://your-server:3173`
 
 ```yaml
 services:
-  controls-dashboard:
-    image: ghcr.io/greg-hass/controls-dashboard:latest
-    container_name: controls-dashboard
+  controld-dashboard:
+    image: ghcr.io/greg-hass/controld-dashboard:latest
+    container_name: controld-dashboard
     ports:
       - "3173:80"
     restart: unless-stopped
