@@ -28,6 +28,11 @@ services:
     restart: unless-stopped
     environment:
       TZ: Europe/London
+    volumes:
+      - controld-dashboard-data:/data
+
+volumes:
+  controld-dashboard-data:
 ```
 
 Open `http://your-server:3173`.
@@ -47,7 +52,7 @@ docker pull ghcr.io/greg-hass/controld-dashboard:latest
 4. Paste the API token.
 5. Disable Demo Mode and save.
 
-The token is stored in browser local storage for this dashboard user. Do not expose the app publicly without your own access controls.
+The token is stored in browser local storage and also synced to the container's scheduler service so temporary DNS pauses can restore themselves even after the browser closes or the container restarts. Do not expose the app publicly without your own access controls.
 
 ## Local Development
 

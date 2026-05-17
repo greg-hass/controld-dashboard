@@ -15,9 +15,16 @@ import type {
   NetworkStats,
   QuickAction,
   AppSettings,
+  DeviceSchedule,
 } from '@/types/controld';
 import * as mock from '@/data/mock';
 import { api } from '@/services/api';
+import {
+  loadSchedulerState,
+  restoreDevicePause,
+  scheduleDevicePause,
+  syncSchedulerToken as syncSchedulerTokenApi,
+} from '@/services/scheduler';
 
 interface AppState {
   // Settings
@@ -38,7 +45,7 @@ interface AppState {
   ipInfo: IPInfo | null;
   networkStats: NetworkStats[];
   quickActions: QuickAction[];
-  deviceSuspensions: Record<string, DeviceSuspension>;
+  deviceSuspensions: Record<string, DeviceSchedule>;
 
   // UI State
   isLoading: boolean;
@@ -59,7 +66,8 @@ interface AppState {
   refreshDevices: () => Promise<void>;
   refreshServices: () => Promise<void>;
   refreshRules: (profileId: string) => Promise<void>;
-  syncDeviceSuspensions: () => void;
+  loadDeviceSchedules: () => Promise<void>;
+  syncSchedulerToken: () => Promise<void>;
 
   // Mutations
   updateProfileServices: (profileId: string, serviceId: string, status: number) => Promise<void>;
@@ -70,11 +78,6 @@ interface AppState {
   restoreDeviceStatus: (deviceId: string) => Promise<void>;
   createCustomRule: (profileId: string, rule: Partial<CustomRule>) => Promise<void>;
   deleteCustomRule: (profileId: string, hostname: string) => Promise<void>;
-}
-
-interface DeviceSuspension {
-  expiresAt: number;
-  restoreStatus: number;
 }
 
 const defaultSettings: AppSettings = {
@@ -374,24 +377,33 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      syncDeviceSuspensions: () => {
-        const now = Date.now();
-        const suspensions = get().deviceSuspensions;
+      loadDeviceSchedules: async () => {
+        const { settings } = get();
 
-        Object.entries(suspensions).forEach(([deviceId, suspension]) => {
-          clearDeviceSuspendTimer(deviceId);
+        if (settings.demoMode) {
+          set({ deviceSuspensions: {} });
+          return;
+        }
 
-          if (suspension.expiresAt <= now) {
-            void get().restoreDeviceStatus(deviceId).catch(() => undefined);
-            return;
-          }
+        try {
+          const schedules = await loadSchedulerState();
+          set({
+            deviceSuspensions: Object.fromEntries(
+              schedules.map((schedule) => [schedule.deviceId, schedule])
+            ),
+          });
+        } catch (err) {
+          set({ error: 'Failed to load device schedules' });
+        }
+      },
 
-          const timer = setTimeout(() => {
-            void get().restoreDeviceStatus(deviceId).catch(() => undefined);
-          }, suspension.expiresAt - now);
-
-          deviceSuspendTimers.set(deviceId, timer);
-        });
+      syncSchedulerToken: async () => {
+        const { settings } = get();
+        try {
+          await syncSchedulerTokenApi(settings.demoMode ? '' : settings.apiToken);
+        } catch (err) {
+          set({ error: 'Failed to sync scheduler token' });
+        }
       },
 
       // Mutations
@@ -448,7 +460,7 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      updateDeviceStatus: async (deviceId, status) => {
+      updateDeviceStatus: async (deviceId: string, status: number) => {
         if (get().settings.demoMode) {
           set((state) => ({
             devices: state.devices.map((device) =>
@@ -480,34 +492,62 @@ export const useAppStore = create<AppState>()(
         const restoreStatus = device.status === 2 ? 1 : device.status;
         const expiresAt = Date.now() + durationMinutes * 60 * 1000;
 
-        await get().updateDeviceStatus(deviceId, 2);
+        if (get().settings.demoMode) {
+          await get().updateDeviceStatus(deviceId, 2);
+
+          set((state) => ({
+            deviceSuspensions: {
+              ...state.deviceSuspensions,
+              [deviceId]: { deviceId, deviceName: device.name, expiresAt, restoreStatus },
+            },
+          }));
+
+          clearDeviceSuspendTimer(deviceId);
+          const timer = setTimeout(() => {
+            void get().restoreDeviceStatus(deviceId).catch(() => undefined);
+          }, durationMinutes * 60 * 1000);
+          deviceSuspendTimers.set(deviceId, timer);
+          return;
+        }
+
+        const schedule = await scheduleDevicePause({
+          deviceId,
+          deviceName: device.name,
+          durationMinutes,
+          restoreStatus,
+        });
 
         set((state) => ({
           deviceSuspensions: {
             ...state.deviceSuspensions,
-            [deviceId]: { expiresAt, restoreStatus },
+            [deviceId]: schedule,
           },
         }));
-
-        clearDeviceSuspendTimer(deviceId);
-        const timer = setTimeout(() => {
-          void get().restoreDeviceStatus(deviceId).catch(() => undefined);
-        }, durationMinutes * 60 * 1000);
-        deviceSuspendTimers.set(deviceId, timer);
+        await get().refreshDevices();
       },
 
       restoreDeviceStatus: async (deviceId) => {
         const suspension = get().deviceSuspensions[deviceId];
         const restoreStatus = suspension?.restoreStatus ?? 1;
 
-        clearDeviceSuspendTimer(deviceId);
+        if (get().settings.demoMode) {
+          clearDeviceSuspendTimer(deviceId);
+          await get().updateDeviceStatus(deviceId, restoreStatus);
 
-        await get().updateDeviceStatus(deviceId, restoreStatus);
+          set((state) => {
+            const { [deviceId]: _removed, ...rest } = state.deviceSuspensions;
+            return { deviceSuspensions: rest };
+          });
+          return;
+        }
+
+        await restoreDevicePause({ deviceId, restoreStatus });
 
         set((state) => {
           const { [deviceId]: _removed, ...rest } = state.deviceSuspensions;
           return { deviceSuspensions: rest };
         });
+        await get().refreshDevices();
       },
 
       createCustomRule: async (profileId, rule) => {
@@ -565,7 +605,6 @@ export const useAppStore = create<AppState>()(
         settings: state.settings,
         darkMode: state.darkMode,
         sidebarOpen: state.sidebarOpen,
-        deviceSuspensions: state.deviceSuspensions,
       }),
     }
   )

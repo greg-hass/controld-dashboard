@@ -97,6 +97,13 @@ export interface Device {
   clients?: number;
 }
 
+export interface DeviceSchedule {
+  deviceId: string;
+  deviceName?: string;
+  expiresAt: number;
+  restoreStatus: number;
+}
+
 export interface DeviceType {
   PK: string;
   name: string;

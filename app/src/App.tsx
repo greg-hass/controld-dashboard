@@ -17,15 +17,21 @@ import './App.css';
 function AppContent() {
   const darkMode = useAppStore((state) => state.darkMode);
   const loadAllData = useAppStore((state) => state.loadAllData);
-  const syncDeviceSuspensions = useAppStore((state) => state.syncDeviceSuspensions);
+  const loadDeviceSchedules = useAppStore((state) => state.loadDeviceSchedules);
+  const syncSchedulerToken = useAppStore((state) => state.syncSchedulerToken);
+  const settings = useAppStore((state) => state.settings);
 
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
 
   useEffect(() => {
-    syncDeviceSuspensions();
-  }, [syncDeviceSuspensions]);
+    loadDeviceSchedules();
+  }, [loadDeviceSchedules]);
+
+  useEffect(() => {
+    syncSchedulerToken();
+  }, [syncSchedulerToken, settings.apiToken, settings.demoMode]);
 
   useEffect(() => {
     if (darkMode) {

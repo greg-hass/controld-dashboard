@@ -36,6 +36,7 @@ export function Settings() {
   const user = useAppStore((state) => state.user);
   const error = useAppStore((state) => state.error);
   const loadAllData = useAppStore((state) => state.loadAllData);
+  const syncSchedulerToken = useAppStore((state) => state.syncSchedulerToken);
 
   const [localSettings, setLocalSettings] = useState(settings);
   const [showToken, setShowToken] = useState(false);
@@ -49,6 +50,7 @@ export function Settings() {
 
     setLocalSettings(nextSettings);
     setSettings(nextSettings);
+    await syncSchedulerToken();
 
     if (!nextSettings.demoMode && nextSettings.apiToken) {
       toast.info('Live mode enabled. Loading Control D data...');

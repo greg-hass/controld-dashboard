@@ -16,6 +16,11 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      '/scheduler': {
+        target: 'http://127.0.0.1:8788',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   resolve: {

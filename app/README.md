@@ -44,6 +44,11 @@ services:
     restart: unless-stopped
     environment:
       TZ: Europe/London
+    volumes:
+      - controld-dashboard-data:/data
+
+volumes:
+  controld-dashboard-data:
 ```
 
 4. Click **Deploy**
@@ -55,6 +60,7 @@ services:
 3. Open the dashboard → **Settings**
 4. Paste your token, disable **Demo Mode**, click **Save**
 5. The dashboard will reload with your live data
+6. Temporary device DNS pauses are handled by the container and persist through browser refreshes and container restarts
 
 ## Tech Stack
 
