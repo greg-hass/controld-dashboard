@@ -252,6 +252,16 @@ function ServiceCard({
   const formattedRoute = service.via ? formatRouteLocation(service.via, routeLocationMeta) : null;
   const routeValue = service.status === 3 && service.via ? service.via : 'default';
   const routeLocations = service.locations?.length ? service.locations : fallbackRouteLocations;
+  const countryRouteOptions = routeLocations.filter((location, index, list) => {
+    const country = formatRouteLocation(location, routeLocationMeta).label;
+    return list.findIndex((candidate) =>
+      formatRouteLocation(candidate, routeLocationMeta).label === country
+    ) === index;
+  }).sort((left, right) =>
+    formatRouteLocation(left, routeLocationMeta).label.localeCompare(
+      formatRouteLocation(right, routeLocationMeta).label
+    )
+  );
 
   return (
     <div
@@ -303,22 +313,40 @@ function ServiceCard({
         )}
       </div>
       <div className="mt-3" onClick={(event) => event.stopPropagation()}>
-        <select
-          value={routeValue}
-          onChange={(event) => onRoute(event.target.value)}
-          className="h-8 w-full rounded-md border border-border/60 bg-background/60 px-2 text-xs text-foreground outline-none transition-colors hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          aria-label={`Route ${service.name}`}
-        >
-          <option value="default">Automatic route</option>
-          {routeLocations.map((location) => {
+        <div className="flex flex-wrap gap-1.5" aria-label={`Route ${service.name}`}>
+          <button
+            type="button"
+            onClick={() => onRoute('default')}
+            className={cn(
+              'h-7 rounded-full border px-2 text-xs transition-colors',
+              routeValue === 'default'
+                ? 'border-primary bg-primary/15 text-primary'
+                : 'border-border/70 bg-background/60 text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Auto
+          </button>
+          {countryRouteOptions.map((location) => {
             const formatted = formatRouteLocation(location, routeLocationMeta);
             return (
-              <option key={location} value={location}>
-                {formatted.flag} {formatted.label} ({formatted.code})
-              </option>
+              <button
+                key={location}
+                type="button"
+                onClick={() => onRoute(location)}
+                title={`${formatted.label} (${formatted.code})`}
+                className={cn(
+                  'h-7 rounded-full border px-2 text-xs transition-colors',
+                  routeValue === location
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border/70 bg-background/60 text-foreground hover:border-primary/40'
+                )}
+              >
+                <span className="mr-1" aria-hidden="true">{formatted.flag}</span>
+                {formatted.label}
+              </button>
             );
           })}
-        </select>
+        </div>
       </div>
     </div>
   );

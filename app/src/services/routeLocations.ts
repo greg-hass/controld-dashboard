@@ -74,14 +74,12 @@ export const formatRouteLocation = (
 ) => {
   const normalizedCode = code.toUpperCase();
   const location = routeLocations[normalizedCode] ?? KNOWN_ROUTE_LOCATIONS[normalizedCode];
-  const label = location?.city && location.country
-    ? `${location.city}, ${location.country}`
-    : location?.name ?? location?.city ?? normalizedCode;
+  const label = location?.country ?? location?.name ?? location?.city ?? normalizedCode;
 
   return {
     code: normalizedCode,
     flag: location?.flag ?? '🌐',
     label,
-    shortLabel: location?.city ?? location?.name ?? normalizedCode,
+    shortLabel: label,
   };
 };

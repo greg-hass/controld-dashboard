@@ -9,8 +9,8 @@ describe('route location labels', () => {
     expect(formatRouteLocation('LON')).toEqual({
       code: 'LON',
       flag: '🇬🇧',
-      label: 'London, United Kingdom',
-      shortLabel: 'London',
+      label: 'United Kingdom',
+      shortLabel: 'United Kingdom',
     });
   });
 
@@ -19,6 +19,6 @@ describe('route location labels', () => {
       proxies: [{ PK: 'YYZ', city: 'Toronto', country: 'Canada' }],
     });
 
-    expect(formatRouteLocation('YYZ', locations).label).toBe('Toronto, Canada');
+    expect(formatRouteLocation('YYZ', locations).label).toBe('Canada');
   });
 });
