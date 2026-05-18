@@ -14,7 +14,6 @@ import {
   Landmark,
   Music,
   Filter,
-  Route,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,20 +22,6 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { Service, ServiceCategory, Profile } from '@/types/controld';
 import { collectRouteLocations } from '@/services/controldData';
@@ -79,16 +64,11 @@ export function Services() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProfileId, setSelectedProfileId] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [routeEditorServiceId, setRouteEditorServiceId] = useState<string | null>(null);
   const selectedProfile = selectedProfileId || profiles[0]?.PK || '';
   const currentServices = selectedProfile
     ? profileServices[selectedProfile] ?? services
     : services;
   const availableRouteLocations = collectRouteLocations(currentServices);
-  const routeEditorService = currentServices.find((service) => service.PK === routeEditorServiceId);
-  const routeEditorLocations = routeEditorService?.locations?.length
-    ? routeEditorService.locations
-    : availableRouteLocations;
 
   useEffect(() => {
     if (selectedProfile) {
@@ -118,11 +98,9 @@ export function Services() {
     if (!selectedProfile) return;
     if (location === 'default') {
       updateProfileServices(selectedProfile, serviceId, 1);
-      setRouteEditorServiceId(null);
       return;
     }
     updateProfileServices(selectedProfile, serviceId, 3, location);
-    setRouteEditorServiceId(null);
   };
 
   // Stats
@@ -218,7 +196,8 @@ export function Services() {
                         service={service}
                         category={category}
                         onToggle={() => handleToggleService(service.PK, service.status)}
-                        onEditRoute={() => setRouteEditorServiceId(service.PK)}
+                        onRoute={(location) => handleRouteService(service.PK, location)}
+                        fallbackRouteLocations={availableRouteLocations}
                         routeLocationMeta={routeLocationMeta}
                       />
                     ))}
@@ -234,7 +213,8 @@ export function Services() {
                   service={service}
                   category={service.category}
                   onToggle={() => handleToggleService(service.PK, service.status)}
-                  onEditRoute={() => setRouteEditorServiceId(service.PK)}
+                  onRoute={(location) => handleRouteService(service.PK, location)}
+                  fallbackRouteLocations={availableRouteLocations}
                   routeLocationMeta={routeLocationMeta}
                 />
               ))}
@@ -250,40 +230,6 @@ export function Services() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={Boolean(routeEditorService)} onOpenChange={(open) => {
-        if (!open) setRouteEditorServiceId(null);
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Route {routeEditorService?.name}</DialogTitle>
-            <DialogDescription>
-              Choose where this service should be redirected, or leave it on automatic routing.
-            </DialogDescription>
-          </DialogHeader>
-          <Select
-            value={routeEditorService?.status === 3 && routeEditorService.via ? routeEditorService.via : 'default'}
-            onValueChange={(location) => {
-              if (routeEditorService) handleRouteService(routeEditorService.PK, location);
-            }}
-            disabled={!routeEditorService}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Route location" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">Automatic route</SelectItem>
-              {routeEditorLocations.map((location) => {
-                const formatted = formatRouteLocation(location, routeLocationMeta);
-                return (
-                  <SelectItem key={location} value={location}>
-                    {formatted.flag} {formatted.label} ({formatted.code})
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -292,16 +238,20 @@ function ServiceCard({
   service,
   category,
   onToggle,
-  onEditRoute,
+  onRoute,
+  fallbackRouteLocations,
   routeLocationMeta,
 }: {
   service: Service;
   category: string;
   onToggle: () => void;
-  onEditRoute: () => void;
+  onRoute: (location: string) => void;
+  fallbackRouteLocations: string[];
   routeLocationMeta: ReturnType<typeof useAppStore.getState>['routeLocations'];
 }) {
   const formattedRoute = service.via ? formatRouteLocation(service.via, routeLocationMeta) : null;
+  const routeValue = service.status === 3 && service.via ? service.via : 'default';
+  const routeLocations = service.locations?.length ? service.locations : fallbackRouteLocations;
 
   return (
     <div
@@ -353,18 +303,22 @@ function ServiceCard({
         )}
       </div>
       <div className="mt-3" onClick={(event) => event.stopPropagation()}>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 w-full justify-start text-xs"
-          onClick={onEditRoute}
+        <select
+          value={routeValue}
+          onChange={(event) => onRoute(event.target.value)}
+          className="h-8 w-full rounded-md border border-border/60 bg-background/60 px-2 text-xs text-foreground outline-none transition-colors hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          aria-label={`Route ${service.name}`}
         >
-          <Route className="w-3.5 h-3.5" />
-          {formattedRoute
-            ? `${formattedRoute.flag} ${formattedRoute.shortLabel}`
-            : 'Automatic route'}
-        </Button>
+          <option value="default">Automatic route</option>
+          {routeLocations.map((location) => {
+            const formatted = formatRouteLocation(location, routeLocationMeta);
+            return (
+              <option key={location} value={location}>
+                {formatted.flag} {formatted.label} ({formatted.code})
+              </option>
+            );
+          })}
+        </select>
       </div>
     </div>
   );
