@@ -16,6 +16,7 @@ import type {
   IPInfo,
   NetworkStats,
   ApiResponse,
+  RouteLocation,
 } from '@/types/controld';
 
 type ControlDFormValue = string | number | boolean | null | undefined;
@@ -354,6 +355,10 @@ class ControlDApi {
 
   async getStorageRegions(): Promise<ApiResponse<StorageRegion[]>> {
     return this.request<ApiResponse<StorageRegion[]>>('/analytics/endpoints');
+  }
+
+  async getProxies(): Promise<ApiResponse<RouteLocation[]>> {
+    return this.request<ApiResponse<RouteLocation[]>>('/proxies');
   }
 
   // Misc

@@ -189,6 +189,14 @@ export interface NetworkStats {
   latency?: number;
 }
 
+export interface RouteLocation {
+  code: string;
+  city?: string;
+  country?: string;
+  name?: string;
+  flag?: string;
+}
+
 export interface IPInfo {
   ip: string;
   city: string;

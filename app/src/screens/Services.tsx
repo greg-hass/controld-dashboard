@@ -32,6 +32,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { Service, ServiceCategory, Profile } from '@/types/controld';
 import { collectRouteLocations } from '@/services/controldData';
+import { formatRouteLocation } from '@/services/routeLocations';
 
 const categoryIcons: Record<string, React.ReactNode> = {
   social: <Globe className="w-4 h-4" />,
@@ -63,6 +64,7 @@ export function Services() {
   const services = useAppStore((state) => state.services);
   const profileServices = useAppStore((state) => state.profileServices);
   const serviceCategories = useAppStore((state) => state.serviceCategories);
+  const routeLocationMeta = useAppStore((state) => state.routeLocations);
   const profiles = useAppStore((state) => state.profiles);
   const loadProfileServices = useAppStore((state) => state.loadProfileServices);
   const updateProfileServices = useAppStore((state) => state.updateProfileServices);
@@ -203,6 +205,7 @@ export function Services() {
                         onToggle={() => handleToggleService(service.PK, service.status)}
                         onRoute={(location) => handleRouteService(service.PK, location)}
                         fallbackRouteLocations={availableRouteLocations}
+                        routeLocationMeta={routeLocationMeta}
                       />
                     ))}
                   </div>
@@ -219,6 +222,7 @@ export function Services() {
                   onToggle={() => handleToggleService(service.PK, service.status)}
                   onRoute={(location) => handleRouteService(service.PK, location)}
                   fallbackRouteLocations={availableRouteLocations}
+                  routeLocationMeta={routeLocationMeta}
                 />
               ))}
             </div>
@@ -242,15 +246,18 @@ function ServiceCard({
   onToggle,
   onRoute,
   fallbackRouteLocations,
+  routeLocationMeta,
 }: {
   service: Service;
   category: string;
   onToggle: () => void;
   onRoute: (location: string) => void;
   fallbackRouteLocations: string[];
+  routeLocationMeta: ReturnType<typeof useAppStore.getState>['routeLocations'];
 }) {
   const routeValue = service.status === 3 && service.via ? service.via : 'default';
   const routeLocations = service.locations?.length ? service.locations : fallbackRouteLocations;
+  const formattedRoute = service.via ? formatRouteLocation(service.via, routeLocationMeta) : null;
 
   return (
     <div
@@ -290,7 +297,9 @@ function ServiceCard({
         ) : service.status === 3 ? (
           <>
             <Globe className="w-3 h-3 text-blue-500" />
-            <span className="text-xs text-blue-500">Routed via {service.via}</span>
+            <span className="text-xs text-blue-500">
+              Routed via {formattedRoute?.flag} {formattedRoute?.shortLabel}
+            </span>
           </>
         ) : (
           <>
@@ -305,10 +314,13 @@ function ServiceCard({
             <SelectValue placeholder="Route location" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="default">Default route</SelectItem>
+            <SelectItem value="default">Automatic route</SelectItem>
             {routeLocations.map((location) => (
               <SelectItem key={location} value={location}>
-                {location}
+                {(() => {
+                  const formatted = formatRouteLocation(location, routeLocationMeta);
+                  return `${formatted.flag} ${formatted.label} (${formatted.code})`;
+                })()}
               </SelectItem>
             ))}
           </SelectContent>

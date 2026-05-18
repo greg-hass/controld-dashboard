@@ -17,6 +17,7 @@ import type {
   AppSettings,
   DeviceSchedule,
   AccessIP,
+  RouteLocation,
 } from '@/types/controld';
 import * as mock from '@/data/mock';
 import { api } from '@/services/api';
@@ -26,6 +27,7 @@ import {
   normalizeProfileServiceRules,
 } from '@/services/controldData';
 import { normalizeControlDDevice, summarizeDeviceActivity } from '@/services/deviceStatus';
+import { normalizeRouteLocationRecords } from '@/services/routeLocations';
 import {
   loadSchedulerState,
   restoreDevicePause,
@@ -52,6 +54,7 @@ interface AppState {
   storageRegions: StorageRegion[];
   ipInfo: IPInfo | null;
   networkStats: NetworkStats[];
+  routeLocations: Record<string, RouteLocation>;
   quickActions: QuickAction[];
   deviceSuspensions: Record<string, DeviceSchedule>;
 
@@ -290,6 +293,7 @@ export const useAppStore = create<AppState>()(
       storageRegions: [],
       ipInfo: null,
       networkStats: [],
+      routeLocations: {},
       quickActions: mock.mockQuickActions,
       deviceSuspensions: {},
 
@@ -329,6 +333,7 @@ export const useAppStore = create<AppState>()(
               storageRegions: mock.mockStorageRegions,
               ipInfo: mock.mockIPInfo,
               networkStats: mock.mockNetworkStats,
+              routeLocations: normalizeRouteLocationRecords(mock.mockStorageRegions),
               quickActions: mock.mockQuickActions,
               isLoading: false,
             });
@@ -351,15 +356,17 @@ export const useAppStore = create<AppState>()(
             storageRegions: [],
             ipInfo: null,
             networkStats: [],
+            routeLocations: {},
           });
 
-          const [userRes, profilesRes, devicesRes, categoriesRes, ipRes, netRes] = await Promise.all([
+          const [userRes, profilesRes, devicesRes, categoriesRes, ipRes, netRes, proxiesRes] = await Promise.all([
             api.getUser(),
             api.getProfiles(),
             api.getDevices(),
             api.getServiceCategories(),
             api.getIP(),
             api.getNetworkStats(),
+            api.getProxies().catch(() => ({ body: [], success: true })),
           ]);
 
           const profiles = extractApiArray<Profile>(profilesRes.body, 'profiles');
@@ -370,6 +377,7 @@ export const useAppStore = create<AppState>()(
             'categories'
           );
           const networkStats = normalizeNetworkStats(netRes.body);
+          const routeLocations = normalizeRouteLocationRecords(proxiesRes.body);
 
           set({
             user: userRes.body,
@@ -378,6 +386,7 @@ export const useAppStore = create<AppState>()(
             serviceCategories,
             ipInfo: ipRes.body,
             networkStats,
+            routeLocations,
             isLoading: false,
           });
 
@@ -415,6 +424,7 @@ export const useAppStore = create<AppState>()(
             storageRegions: [],
             ipInfo: null,
             networkStats: [],
+            routeLocations: {},
             error: err instanceof Error ? err.message : 'Failed to load data',
             isLoading: false,
           });
